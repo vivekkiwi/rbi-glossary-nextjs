@@ -15,10 +15,12 @@ export async function POST() {
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
   })
 
+  const receipt = `rcpt_${user.id.replaceAll("-", "").slice(0, 10)}_${Date.now()}`
+
   const options = {
     amount: 49900, // ₹499 in paise
     currency: "INR",
-    receipt: `receipt_${user.id}_${Date.now()}`,
+    receipt,
   }
 
   try {

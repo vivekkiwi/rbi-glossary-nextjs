@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProgressBoard } from "@/components/progress-board"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -44,26 +45,7 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Start Practicing</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Link href="/practice">
-                  <Button className="w-full">Go to Practice</Button>
-                </Link>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Progress tracking is active. Keep practicing daily!</p>
-              </CardContent>
-            </Card>
-          </div>
+          <ProgressBoard />
         )}
       </div>
     </div>
