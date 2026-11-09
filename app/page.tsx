@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
+import { InstallHint } from "@/components/pwa"
 
 const modes = [
   {
@@ -70,6 +71,7 @@ export default async function Home() {
               </Link>
               {!user && <p className="text-sm text-muted-foreground">Google sign-in · one-time ₹499</p>}
             </div>
+            <InstallHint />
           </div>
 
           <div className="rounded-2xl border bg-card p-5">

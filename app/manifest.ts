@@ -1,0 +1,20 @@
+import type { MetadataRoute } from "next"
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Glossary Mastery",
+    short_name: "Glossary",
+    description: "Practice 7,894 English–Hindi banking terms with quizzes, flashcards, and guesses.",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#020617",
+    theme_color: "#020617",
+    icons: [
+      { src: "/pwa-icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/pwa-icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/pwa-icon/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+  }
+}
