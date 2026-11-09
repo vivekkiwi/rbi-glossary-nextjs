@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PayButton } from "@/components/pay-button"
 import { ProgressBoard } from "@/components/progress-board"
 
 export default async function DashboardPage() {
@@ -36,12 +36,8 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-4xl font-bold text-green-500">₹499</div>
-              <Link href="/payment">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Pay Now
-                </Button>
-              </Link>
-              <p className="text-sm text-muted-foreground">Secure payment via Razorpay</p>
+              <PayButton />
+              <p className="text-sm text-muted-foreground">One payment. Access opens on this page.</p>
             </CardContent>
           </Card>
         ) : (

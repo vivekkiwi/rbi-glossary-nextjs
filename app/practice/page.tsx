@@ -188,9 +188,8 @@ export default function PracticePage() {
   useEffect(() => {
     if (loading || autoStarted.current || letterTerms.length === 0) return
     const requested = new URLSearchParams(window.location.search).get("mode")
-    if (requested !== "quiz" && requested !== "flash" && requested !== "guess") return
+    if (requested !== "flash" && requested !== "guess") return
     autoStarted.current = true
-    if (requested === "quiz") startQuiz()
     if (requested === "flash") startFlash()
     if (requested === "guess") nextGuess()
     // Start once when the glossary for the requested letter is ready.
