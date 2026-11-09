@@ -21,10 +21,7 @@ export const metadata: Metadata = {
     title: "Glossary",
   },
   icons: {
-    icon: [
-      { url: "/pwa-icon/192", sizes: "192x192", type: "image/png" },
-      { url: "/pwa-icon/512", sizes: "512x512", type: "image/png" },
-    ],
+    icon: [{ url: "/icon", sizes: "64x64", type: "image/png" }],
     apple: [{ url: "/pwa-icon/180", sizes: "180x180", type: "image/png" }],
   },
 }
