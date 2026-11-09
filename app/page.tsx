@@ -1,7 +1,9 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import { InstallHint } from "@/components/pwa"
+import { siteDescription, siteName, siteUrl } from "@/lib/site"
 
 const modes = [
   {
@@ -30,6 +32,11 @@ const steps = [
   ["Practice daily", "Pick a letter. Your accuracy, streak, and weak terms stay on the dashboard."],
 ]
 
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: "/" },
+}
+
 const samples = [
   ["Account", "खाता"],
   ["Balance", "शेष"],
@@ -55,8 +62,10 @@ export default async function Home() {
       <main className="mx-auto max-w-5xl space-y-16 px-4 pb-20">
         <section className="grid items-end gap-10 pt-8 md:grid-cols-[1.4fr_0.8fr]">
           <div className="space-y-6">
-            <p className="text-sm font-medium uppercase tracking-widest text-blue-300">English–Hindi banking glossary</p>
             <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
+              <span className="mb-3 block text-base font-medium uppercase tracking-widest text-blue-300 sm:text-lg">
+                RBI banking glossary
+              </span>
               Learn the terms.
               <span className="block bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
                 Remember them.
@@ -126,7 +135,43 @@ export default async function Home() {
             </Link>
           </div>
         </section>
+
+        <section className="max-w-3xl space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight">Practice the RBI glossary in English and Hindi</h2>
+          <p className="text-muted-foreground">
+            Glossary Mastery covers the banking vocabulary used in the RBI glossary: deposits, credit, foreign exchange, payment systems, and supervision. Every term has an English headword and a Hindi equivalent, grouped from A to Z. A quiz round can run English to Hindi or Hindi to English. Flashcards show one side until you flip. Guess asks you to type the other language.
+          </p>
+          <p className="text-muted-foreground">
+            Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. Lifetime access is a single ₹499 payment. Signed-in practice pages stay out of search results.
+          </p>
+        </section>
       </main>
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>{siteName}</p>
+          <p>7,894 English–Hindi banking terms</p>
+        </div>
+      </footer>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: siteName,
+            url: siteUrl(),
+            description: siteDescription,
+            applicationCategory: "EducationalApplication",
+            operatingSystem: "Web",
+            inLanguage: ["en", "hi"],
+            offers: {
+              "@type": "Offer",
+              price: "499",
+              priceCurrency: "INR",
+            },
+          }),
+        }}
+      />
     </div>
   )
 }
