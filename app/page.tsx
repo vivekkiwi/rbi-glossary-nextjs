@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
+import { DemoVideo } from "@/components/demo-video"
 import { InstallHint } from "@/components/pwa"
 import { siteDescription, siteName, siteUrl } from "@/lib/site"
 
@@ -95,6 +96,8 @@ export default async function Home() {
             </ul>
           </div>
         </section>
+
+        <DemoVideo />
 
         <section className="grid gap-4 md:grid-cols-3">
           {modes.map((mode) => (
