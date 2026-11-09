@@ -90,23 +90,12 @@ export function ProgressBoard() {
   }
 
   const coverage = summary.total ? Math.round((summary.attempted / summary.total) * 100) : 0
-
-  if (summary.attempted === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Your progress</CardTitle>
-          <CardDescription>Nothing practiced yet. Your first answer starts the record.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
-            Quizzes, flashcards, and guesses all count. You will see accuracy, a day streak, coverage for every letter, and the terms you miss most.
-          </p>
-          <PracticeActions letter="A" />
-        </CardContent>
-      </Card>
-    )
-  }
+  const modeRows = [
+    ["Quiz", summary.quiz, "bg-blue-500"],
+    ["Flashcards", summary.flash, "bg-violet-500"],
+    ["Guess", summary.guess, "bg-emerald-500"],
+    ["Earlier practice", summary.earlier, "bg-slate-500"],
+  ].filter(([, count]) => Number(count) > 0)
 
   return (
     <div className="space-y-6">
@@ -127,7 +116,9 @@ export function ProgressBoard() {
             <div>
               <h2 className="text-2xl font-semibold">Your progress</h2>
               <p className="text-muted-foreground">
-                {summary.attempted.toLocaleString()} of {summary.total.toLocaleString()} terms practiced · {summary.accuracy}% accurate · {summary.streak} day streak
+                {summary.attempted === 0
+                  ? "Nothing practiced in this browser yet. Your first answer fills in the numbers below."
+                  : `${summary.attempted.toLocaleString()} of ${summary.total.toLocaleString()} terms practiced · ${summary.accuracy}% accurate · ${summary.streak} day streak`}
               </p>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-secondary">
@@ -161,12 +152,9 @@ export function ProgressBoard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {[
-            ["Quiz", summary.quiz, "bg-blue-500"],
-            ["Flashcards", summary.flash, "bg-violet-500"],
-            ["Guess", summary.guess, "bg-emerald-500"],
-            ["Earlier practice", summary.earlier, "bg-slate-500"],
-          ].filter(([, count]) => Number(count) > 0).map(([label, count, color]) => {
+          {modeRows.length === 0 ? (
+            <p className="text-muted-foreground">Quiz, flashcard, and guess answers will split out here.</p>
+          ) : modeRows.map(([label, count, color]) => {
             const total = summary.quiz + summary.flash + summary.guess + summary.earlier || 1
             const width = Math.round((Number(count) / total) * 100)
             return (
@@ -220,7 +208,7 @@ export function ProgressBoard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {summary.weak.length === 0 ? (
-              <p className="text-muted-foreground">No weak terms. Keep the streak going.</p>
+              <p className="text-muted-foreground">Missed terms show up here after you answer a few.</p>
             ) : summary.weak.map((term) => (
               <div key={term.en} className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
                 <div>
@@ -240,7 +228,7 @@ export function ProgressBoard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {summary.activity.length === 0 ? (
-              <p className="text-muted-foreground">New answers will list here, including the ones you already counted above.</p>
+              <p className="text-muted-foreground">Each quiz choice, card rating, and guess will show up here.</p>
             ) : summary.activity.map((item) => (
               <div key={`${item.at}-${item.en}`} className="flex items-start justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
                 <div>
