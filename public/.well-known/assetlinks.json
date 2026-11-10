@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.shabdawali.app",
+      "sha256_cert_fingerprints": [
+        "6C:77:02:81:A7:76:F4:1F:FC:11:01:CA:AB:B3:80:52:77:FD:E9:BD:2E:30:FC:8A:E2:89:18:BF:0D:C7:B0:C2"
+      ]
+    }
+  }
+]

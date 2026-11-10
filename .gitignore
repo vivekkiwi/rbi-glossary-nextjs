@@ -33,3 +33,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android signing and build output
+android/android.keystore
+android/signing.properties
+android/.gradle/
+android/local.properties
+android/app/build/
+android/build/
+*.apk
+*.aab
