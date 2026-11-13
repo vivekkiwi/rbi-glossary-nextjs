@@ -73,7 +73,7 @@ export default async function Home() {
               </span>
             </h1>
             <p className="max-w-xl text-lg text-muted-foreground">
-              7,894 English–Hindi banking terms, practiced by letter. Quiz, flip cards, or type the meaning, then see exactly which words still slip.
+              11,537 English–Hindi banking terms, practiced by letter. Quiz, flip cards, or type the meaning, then see exactly which words still slip.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link href={nextHref}>
@@ -152,7 +152,7 @@ export default async function Home() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>{siteName}</p>
-          <p>7,894 English–Hindi banking terms</p>
+          <p>11,537 English–Hindi banking terms</p>
         </div>
       </footer>
       <script

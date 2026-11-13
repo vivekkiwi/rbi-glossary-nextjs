@@ -227,7 +227,8 @@ export default function PracticePage() {
 
   const checkGuess = () => {
     if (!guessTerm || guessFeedback) return
-    const expected = (guessEnglishPrompt ? guessTerm.hi : guessTerm.en).toLowerCase()
+    // Drop sense numbers ("1. निभाव 2. आवास") so the first-word match uses a real word, not "1."
+    const expected = (guessEnglishPrompt ? guessTerm.hi : guessTerm.en).toLowerCase().replace(/(^|\s)\d+\.\s*/g, "$1").trim()
     const answer = guessAnswer.trim().toLowerCase()
     const ok = answer.length > 0 && (answer === expected || expected.includes(answer) || answer.includes(expected.split(/[\s,/]+/)[0]))
     recordAnswer(guessTerm, ok, "guess")
