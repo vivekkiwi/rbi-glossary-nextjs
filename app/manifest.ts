@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Glossary Mastery",
     short_name: "Glossary",
-    description: "Practice 7,894 English–Hindi banking terms with quizzes, flashcards, and guesses.",
+    description: "Practice 11,537 English–Hindi banking terms with quizzes, flashcards, and guesses.",
     start_url: "/",
     scope: "/",
     display: "standalone",

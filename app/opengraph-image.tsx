@@ -43,7 +43,7 @@ export default function OpenGraphImage() {
             RBI Banking Glossary Mastery
           </div>
           <div style={{ display: "flex", fontSize: 32, color: "#cbd5e1" }}>
-            7,894 terms. Quiz, flashcards, and typed recall.
+            11,537 terms. Quiz, flashcards, and typed recall.
           </div>
         </div>
       </div>
