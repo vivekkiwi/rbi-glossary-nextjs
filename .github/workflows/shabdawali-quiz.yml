@@ -1,0 +1,33 @@
+# Daily Shabdawali Telegram quiz (see marketing/telegram-quiz-bot/README.md).
+# Needs repo secrets SHABDAWALI_TG_BOT_TOKEN and SHABDAWALI_TG_CHAT_ID
+# (Settings → Secrets and variables → Actions). Scheduled runs only fire from the
+# default branch, so this starts working once merged to main.
+name: Shabdawali daily quiz
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 07:30 IST daily (GitHub may run it a few minutes late)
+  workflow_dispatch: # "Run workflow" button for a manual post or a test
+
+concurrency:
+  group: shabdawali-quiz
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: marketing/telegram-quiz-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Post today's quiz
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.SHABDAWALI_TG_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.SHABDAWALI_TG_CHAT_ID }}
+          START_DATE: "2026-11-17"
+        run: node quiz-bot.mjs
