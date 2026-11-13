@@ -8,11 +8,13 @@ The original `terms.json` had broken Hindi, cut-off rows and misaligned pairs (e
 
 The Hindi in `approved.tsv` matches the corrected `terms.json` verbatim. `CANDIDATES` reads the live file from shabdawali.com, so deploy the corrected glossary before reviewing new terms.
 
-`approved.tsv` currently holds **80 reviewed pairs = 16 days (17 Nov – 2 Dec 2026)**.
+`approved.tsv` currently holds **80 reviewed pairs = 16 days (14 Nov – 29 Nov 2026)**.
 
 ## How it runs
 
-`.github/workflows/shabdawali-quiz.yml` runs daily at 07:30 IST with `START_DATE: "2026-11-17"`. Line 1 of the queue posts that day. Scheduled runs only fire from `main`. Before the start date, each run logs "nothing to post" and passes, even before the secrets are set.
+`.github/workflows/shabdawali-quiz.yml` runs daily at 07:30 IST with `START_DATE: "2026-11-14"`. Line 1 of the queue posts that day. Scheduled runs only fire from `main`. Before the start date, each run logs "nothing to post" and passes, even before the secrets are set.
+
+**Once a day, at most.** Each real post (the 07:30 run, or a manual **post-now**) saves a marker for that IST date, and any later real post the same day skips. So posting manually at 01:00 means the 07:30 run that day does nothing, and the next set goes out the following morning. If a run fails halfway, no marker is saved and a re-run posts the whole set again, so delete the partial posts first.
 
 ## Setup (≈10 minutes, in your Telegram and GitHub accounts)
 
@@ -24,7 +26,7 @@ The Hindi in `approved.tsv` matches the corrected `terms.json` verbatim. `CANDID
 4. **Merge to `main`.** To move the launch day, change `START_DATE` in the workflow.
 5. **Optional test post** from your machine (posts for real, so use a private test channel):
    ```bash
-   TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=@your_test_channel QUIZ_DATE=2026-11-17 node quiz-bot.mjs
+   TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=@your_test_channel QUIZ_DATE=2026-11-14 node quiz-bot.mjs
    ```
 
 ## Testing
@@ -32,7 +34,8 @@ The Hindi in `approved.tsv` matches the corrected `terms.json` verbatim. `CANDID
 From GitHub → **Actions** → **Shabdawali daily quiz** → **Run workflow**:
 
 1. **`check` (default): posts nothing.** It confirms the token works, finds the channel, and checks that the bot is an admin allowed to post. A green run means the 07:30 schedule will work. A red run says exactly which step failed.
-2. **`test-post`: posts a real quiz set right away.** It defaults to the launch-day set (Q1 "bank rate"). To keep the public channel clean, create a private test channel, add the bot as its admin, and put its `@username` in **test_chat**. If you test on the real channel instead, delete the test posts afterwards, because the same set posts again on launch day.
+2. **`post-now`: posts today's set to the real channel right away**, and counts as today's post, so the 07:30 run skips. It always uses the real channel and ignores **test_chat**. Running it twice on the same day posts nothing the second time.
+3. **`test-post`: posts a set for testing.** It defaults to the first day's set (Q1 "bank rate"). Put a private test channel's `@username` in **test_chat** (the bot must be its admin). It doesn't count as the day's post, so on the real channel it would duplicate a later post. Delete test posts if you use the real channel.
 
 You can also check without posting from your own machine:
 ```bash

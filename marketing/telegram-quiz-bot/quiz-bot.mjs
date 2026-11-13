@@ -11,7 +11,7 @@
 // Env:
 //   TELEGRAM_BOT_TOKEN  bot token from @BotFather (required to send)
 //   TELEGRAM_CHAT_ID    @yourchannel or numeric chat id (required to send)
-//   START_DATE          YYYY-MM-DD of the first post (default 2026-11-17); line 1 of the queue posts that day
+//   START_DATE          YYYY-MM-DD of the first post (default 2026-11-14); line 1 of the queue posts that day
 //   QUIZ_COUNT          polls per day (default 5). Changing it after launch shifts the schedule
 //   SITE_URL            CTA link base (default https://www.shabdawali.com)
 //   QUIZ_DATE           YYYY-MM-DD to post a specific day (default: today in IST)
@@ -27,7 +27,7 @@ const env = process.env;
 const TOKEN = env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = env.TELEGRAM_CHAT_ID;
 const COUNT = Number(env.QUIZ_COUNT || 5);
-const START_DATE = env.START_DATE || "2026-11-17";
+const START_DATE = env.START_DATE || "2026-11-14";
 const SITE_URL = (env.SITE_URL || "https://www.shabdawali.com").replace(/\/$/, "");
 const TERMS_URL = env.TERMS_URL || "https://www.shabdawali.com/terms.json";
 const DRY_RUN = env.DRY_RUN === "1";
