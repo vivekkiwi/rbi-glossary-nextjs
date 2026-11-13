@@ -11,11 +11,12 @@
 // Env:
 //   TELEGRAM_BOT_TOKEN  bot token from @BotFather (required to send)
 //   TELEGRAM_CHAT_ID    @yourchannel or numeric chat id (required to send)
-//   START_DATE          YYYY-MM-DD of the first post (default 2026-11-17); line 1 of the queue posts that day
+//   START_DATE          YYYY-MM-DD of the first post (default 2026-11-14); line 1 of the queue posts that day
 //   QUIZ_COUNT          polls per day (default 5). Changing it after launch shifts the schedule
 //   SITE_URL            CTA link base (default https://www.shabdawali.com)
 //   QUIZ_DATE           YYYY-MM-DD to post a specific day (default: today in IST)
 //   DRY_RUN=1           print what would be sent instead of sending
+//   CHECK=1             verify token, channel and the bot's posting rights; posts nothing
 //   PREVIEW_DAYS=N      print the next N days compactly, send nothing
 //   CANDIDATES=N        print N unreviewed glossary pairs (TSV) to check and append to approved.tsv
 //   TERMS_URL           glossary JSON for CANDIDATES (default https://www.shabdawali.com/terms.json)
@@ -26,7 +27,7 @@ const env = process.env;
 const TOKEN = env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = env.TELEGRAM_CHAT_ID;
 const COUNT = Number(env.QUIZ_COUNT || 5);
-const START_DATE = env.START_DATE || "2026-11-17";
+const START_DATE = env.START_DATE || "2026-11-14";
 const SITE_URL = (env.SITE_URL || "https://www.shabdawali.com").replace(/\/$/, "");
 const TERMS_URL = env.TERMS_URL || "https://www.shabdawali.com/terms.json";
 const DRY_RUN = env.DRY_RUN === "1";
@@ -120,6 +121,57 @@ async function tg(method, body) {
   await new Promise((r) => setTimeout(r, 1200)); // stay well under channel rate limits
 }
 
+// CHECK=1: confirm the token, the channel and the bot's posting rights, without posting.
+async function check() {
+  if (!TOKEN || !CHAT_ID) {
+    throw new Error("CHECK failed: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is empty. Are both repo secrets set?");
+  }
+  const call = async (method, body) => {
+    const res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body || {}),
+    });
+    return res.json();
+  };
+
+  const me = await call("getMe");
+  if (!me.ok) throw new Error(`CHECK failed: the bot token was rejected (${me.description}). Copy it again from @BotFather.`);
+  console.log(`✔ Token works: bot @${me.result.username}`);
+
+  const chat = await call("getChat", { chat_id: CHAT_ID });
+  if (!chat.ok) {
+    throw new Error(
+      `CHECK failed: chat ${CHAT_ID} not found (${chat.description}). ` +
+        `Use the channel's public @username, and make sure the bot has been added to it.`,
+    );
+  }
+  console.log(`✔ Channel found: "${chat.result.title}" (${chat.result.type})`);
+
+  const member = await call("getChatMember", { chat_id: CHAT_ID, user_id: me.result.id });
+  if (!member.ok) throw new Error(`CHECK failed: could not read the bot's role in the channel (${member.description}).`);
+  const m = member.result;
+  const canPost =
+    chat.result.type === "channel"
+      ? m.status === "creator" || (m.status === "administrator" && m.can_post_messages)
+      : ["creator", "administrator", "member"].includes(m.status);
+  if (!canPost) {
+    throw new Error(
+      `CHECK failed: the bot is "${m.status}" in the channel without permission to post. ` +
+        `Make it an admin with "Post messages" turned on.`,
+    );
+  }
+  console.log(`✔ Bot is ${m.status} and can post`);
+
+  const { reason } = buildDay(loadQueue(), env.QUIZ_DATE || istToday());
+  console.log(
+    reason
+      ? `ℹ Today's scheduled run would post nothing: ${reason}.`
+      : "ℹ Today's scheduled run would post 5 quizzes.",
+  );
+  console.log("All checks passed. Nothing was posted.");
+}
+
 async function candidates(n, queue) {
   const have = new Set(queue.map((t) => t.en.toLowerCase()));
   const raw = await (await fetch(TERMS_URL)).json();
@@ -141,6 +193,7 @@ async function main() {
   const queue = loadQueue();
 
   if (env.CANDIDATES) return candidates(Number(env.CANDIDATES), queue);
+  if (env.CHECK === "1") return check();
 
   const date = env.QUIZ_DATE || istToday();
 

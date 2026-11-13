@@ -1,17 +1,37 @@
 # Daily Shabdawali Telegram quiz (see marketing/telegram-quiz-bot/README.md).
 # Needs repo secrets SHABDAWALI_TG_BOT_TOKEN and SHABDAWALI_TG_CHAT_ID
 # (Settings → Secrets and variables → Actions). Scheduled runs only fire from the
-# default branch, so this starts working once merged to main.
+# default branch.
 name: Shabdawali daily quiz
 
 on:
   schedule:
     - cron: "0 2 * * *" # 07:30 IST daily (GitHub may run it a few minutes late)
-  workflow_dispatch: # "Run workflow" button for a manual post or a test
+  workflow_dispatch: # Actions tab → "Shabdawali daily quiz" → "Run workflow"
+    inputs:
+      mode:
+        description: "check = verify setup, posts nothing. post-now = post today's set to the real channel now (the 07:30 run then skips today). test-post = post a set for testing."
+        type: choice
+        options: [check, post-now, test-post]
+        default: check
+      test_chat:
+        description: "check/test-post only: @username of a test channel to use instead of the real one (the bot must be its admin)"
+        required: false
+        default: ""
+      quiz_date:
+        description: "test-post only: which day's set to post, YYYY-MM-DD (default: launch day)"
+        required: false
+        default: ""
 
 concurrency:
   group: shabdawali-quiz
   cancel-in-progress: false
+
+env:
+  START_DATE: "2026-11-14"
+  # Real posts are the daily schedule and "post-now". Only those count toward
+  # the once-a-day guard below.
+  REAL_POST: ${{ github.event_name == 'schedule' || inputs.mode == 'post-now' }}
 
 jobs:
   post:
@@ -25,9 +45,40 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Post today's quiz
+
+      # Once-a-day guard: a successful real post saves a cache entry for the IST date.
+      # Any later real post that day (e.g. the 07:30 run after a post-now) skips.
+      - name: Work out today's date (IST)
+        id: today
+        run: echo "date=$(TZ=Asia/Kolkata date +%F)" >> "$GITHUB_OUTPUT"
+      - name: Check whether today's set was already posted
+        id: posted
+        if: env.REAL_POST == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .quiz-posted
+          key: quiz-posted-${{ steps.today.outputs.date }}
+          lookup-only: true
+      - name: Skip, already posted today
+        if: env.REAL_POST == 'true' && steps.posted.outputs.cache-hit == 'true'
+        run: echo "Today's set (${{ steps.today.outputs.date }}) was already posted. Nothing to do."
+
+      - name: Run the quiz bot
+        if: env.REAL_POST != 'true' || steps.posted.outputs.cache-hit != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.SHABDAWALI_TG_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.SHABDAWALI_TG_CHAT_ID }}
-          START_DATE: "2026-11-17"
+          TELEGRAM_CHAT_ID: ${{ (github.event_name == 'workflow_dispatch' && inputs.mode != 'post-now' && inputs.test_chat) || secrets.SHABDAWALI_TG_CHAT_ID }}
+          CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'check' && '1' || '' }}
+          QUIZ_DATE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'test-post' && (inputs.quiz_date || env.START_DATE) || '' }}
         run: node quiz-bot.mjs
+
+      - name: Record today's post
+        if: env.REAL_POST == 'true' && steps.posted.outputs.cache-hit != 'true'
+        working-directory: .
+        run: mkdir -p .quiz-posted && echo "${{ steps.today.outputs.date }}" > .quiz-posted/date
+      - name: Save the once-a-day marker
+        if: env.REAL_POST == 'true' && steps.posted.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .quiz-posted
+          key: quiz-posted-${{ steps.today.outputs.date }}
