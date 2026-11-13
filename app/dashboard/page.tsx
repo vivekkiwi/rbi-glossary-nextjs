@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { PayButton } from "@/components/pay-button"
 import { ProgressBoard } from "@/components/progress-board"
+import { TelegramJoin } from "@/components/telegram-join"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -48,6 +49,9 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         )}
+        <div className="mb-6">
+          <TelegramJoin variant="compact" location="dashboard" />
+        </div>
         <ProgressBoard />
       </div>
     </div>

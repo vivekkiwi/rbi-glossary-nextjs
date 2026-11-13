@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import { DemoVideo } from "@/components/demo-video"
 import { InstallHint } from "@/components/pwa"
+import { TelegramJoin } from "@/components/telegram-join"
 import { siteDescription, siteName, siteUrl } from "@/lib/site"
 
 const modes = [
@@ -97,6 +98,8 @@ export default async function Home() {
           </div>
         </section>
 
+        <TelegramJoin location="home_hero" />
+
         <DemoVideo />
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -152,7 +155,10 @@ export default async function Home() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>{siteName}</p>
-          <p>11,537 English–Hindi banking terms</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+            <TelegramJoin variant="link" location="home_footer" />
+            <p>11,537 English–Hindi banking terms</p>
+          </div>
         </div>
       </footer>
       <script

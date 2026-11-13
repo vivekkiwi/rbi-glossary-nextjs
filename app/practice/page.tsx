@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { PayButton } from "@/components/pay-button"
+import { TelegramJoin } from "@/components/telegram-join"
 import { loadSessions, recentQuizMisses, recordAnswer, recordQuizSession, type QuizSession } from "@/lib/progress"
 
 type Term = { en: string; hi: string; letter: string }
@@ -449,6 +450,7 @@ export default function PracticePage() {
                     <Button size="lg" variant="outline" onClick={resetSession}>Change settings</Button>
                   </div>
                 )}
+                <TelegramJoin variant="compact" location="quiz_result" />
               </div>
             ) : currentQuestion ? (
               <div className="space-y-6">
