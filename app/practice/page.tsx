@@ -161,6 +161,7 @@ export default function PracticePage() {
     setFlashStarted(false)
     setGuessTerm(null)
     setGuessFeedback(null)
+    setSavedRound(null)
   }
 
   const startQuiz = () => {
@@ -314,6 +315,7 @@ export default function PracticePage() {
                   className={`rounded-xl border border-border px-3 py-3 text-left transition-colors hover:bg-secondary/50 ${item.className}`}
                   onClick={() => {
                     setPendingLetter(null)
+                    setSavedRound(null)
                     setMode(item.id)
                   }}
                 >
@@ -382,7 +384,7 @@ export default function PracticePage() {
                     </>
                   )}
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <Button size="lg" variant="outline" onClick={startQuiz}>Practice letter A again</Button>
+                    <Button size="lg" variant="outline" onClick={startQuiz}>Practice letter {selectedLetter} again</Button>
                   </div>
                 </div>
               ) : (
