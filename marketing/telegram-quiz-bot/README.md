@@ -27,6 +27,18 @@ The Hindi in `approved.tsv` matches the corrected `terms.json` verbatim. `CANDID
    TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=@your_test_channel QUIZ_DATE=2026-11-17 node quiz-bot.mjs
    ```
 
+## Testing
+
+From GitHub → **Actions** → **Shabdawali daily quiz** → **Run workflow**:
+
+1. **`check` (default): posts nothing.** It confirms the token works, finds the channel, and checks that the bot is an admin allowed to post. A green run means the 07:30 schedule will work. A red run says exactly which step failed.
+2. **`test-post`: posts a real quiz set right away.** It defaults to the launch-day set (Q1 "bank rate"). To keep the public channel clean, create a private test channel, add the bot as its admin, and put its `@username` in **test_chat**. If you test on the real channel instead, delete the test posts afterwards, because the same set posts again on launch day.
+
+You can also check without posting from your own machine:
+```bash
+CHECK=1 TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=@rbi_shabdavali node quiz-bot.mjs
+```
+
 ## Weekly upkeep (~10 minutes)
 
 ```bash

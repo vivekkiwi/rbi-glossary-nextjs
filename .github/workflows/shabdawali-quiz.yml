@@ -1,17 +1,34 @@
 # Daily Shabdawali Telegram quiz (see marketing/telegram-quiz-bot/README.md).
 # Needs repo secrets SHABDAWALI_TG_BOT_TOKEN and SHABDAWALI_TG_CHAT_ID
 # (Settings → Secrets and variables → Actions). Scheduled runs only fire from the
-# default branch, so this starts working once merged to main.
+# default branch.
 name: Shabdawali daily quiz
 
 on:
   schedule:
     - cron: "0 2 * * *" # 07:30 IST daily (GitHub may run it a few minutes late)
-  workflow_dispatch: # "Run workflow" button for a manual post or a test
+  workflow_dispatch: # Actions tab → "Shabdawali daily quiz" → "Run workflow"
+    inputs:
+      mode:
+        description: "check = verify token, channel and permissions (posts nothing). test-post = post a real quiz set now."
+        type: choice
+        options: [check, test-post]
+        default: check
+      test_chat:
+        description: "Optional: @username of a test channel to use instead of the real one (the bot must be its admin)"
+        required: false
+        default: ""
+      quiz_date:
+        description: "test-post only: which day's set to post, YYYY-MM-DD (default: launch day)"
+        required: false
+        default: ""
 
 concurrency:
   group: shabdawali-quiz
   cancel-in-progress: false
+
+env:
+  START_DATE: "2026-11-17"
 
 jobs:
   post:
@@ -25,9 +42,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Post today's quiz
+      - name: Run the quiz bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.SHABDAWALI_TG_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.SHABDAWALI_TG_CHAT_ID }}
-          START_DATE: "2026-11-17"
+          TELEGRAM_CHAT_ID: ${{ (github.event_name == 'workflow_dispatch' && inputs.test_chat) || secrets.SHABDAWALI_TG_CHAT_ID }}
+          CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'check' && '1' || '' }}
+          QUIZ_DATE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'test-post' && (inputs.quiz_date || env.START_DATE) || '' }}
         run: node quiz-bot.mjs
