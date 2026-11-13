@@ -8,7 +8,7 @@ The original `terms.json` had broken Hindi, cut-off rows and misaligned pairs (e
 
 The Hindi in `approved.tsv` matches the corrected `terms.json` verbatim. `CANDIDATES` reads the live file from shabdawali.com, so deploy the corrected glossary before reviewing new terms.
 
-`approved.tsv` currently holds **80 reviewed pairs = 16 days (14 Nov – 29 Nov 2026)**.
+`approved.tsv` currently holds **130 reviewed pairs = 26 days (14 Nov – 9 Dec 2026)**.
 
 ## How it runs
 
