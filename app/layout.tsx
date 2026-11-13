@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
+import Script from "next/script"
 import "./globals.css"
 import { Analytics } from "@/components/analytics"
 import { PwaRegister } from "@/components/pwa"
 import { siteDescription, siteName, siteUrl } from "@/lib/site"
+
+const clarityId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID ?? ""
+const validClarityId = /^[a-z0-9]+$/i.test(clarityId) ? clarityId : ""
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -59,6 +63,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      {validClarityId ? (
+        <head>
+          <Script id="clarity" strategy="beforeInteractive">
+            {`(function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/${validClarityId}";
+              l.head.appendChild(t);
+            })(window, document, "clarity", "script", "${validClarityId}");`}
+          </Script>
+        </head>
+      ) : null}
       <body className={inter.className}>
         <PwaRegister />
         <Analytics />

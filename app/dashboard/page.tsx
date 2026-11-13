@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 import { PayButton } from "@/components/pay-button"
 import { ProgressBoard } from "@/components/progress-board"
 
@@ -28,21 +29,26 @@ export default async function DashboardPage() {
           </form>
         </div>
 
-        {!hasPaid ? (
-          <Card className="max-w-md mx-auto text-center">
+        {!hasPaid && (
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Unlock Full Access</CardTitle>
-              <CardDescription>One-time payment for lifetime access to all practice modes</CardDescription>
+              <CardTitle>Letter A is free</CardTitle>
+              <CardDescription>
+                Quiz, flashcards, and guess stay open on A. ₹499 unlocks B–Z and starts the next quiz.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-4xl font-bold text-green-500">₹499</div>
-              <PayButton />
-              <p className="text-sm text-muted-foreground">One payment. Access opens on this page.</p>
+            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-4xl font-bold text-green-500">₹499</p>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-64">
+                <Link href="/practice">
+                  <Button variant="outline" className="w-full">Practice letter A</Button>
+                </Link>
+                <PayButton label="Unlock B–Z · ₹499" />
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <ProgressBoard />
         )}
+        <ProgressBoard />
       </div>
     </div>
   )

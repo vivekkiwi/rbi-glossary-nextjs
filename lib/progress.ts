@@ -113,6 +113,19 @@ export function recordQuizSession(session: Omit<QuizSession, "at">) {
   notify()
 }
 
+export function recentQuizMisses(session: QuizSession, limit = 3): Activity[] {
+  const seen = new Set<string>()
+  const matches: Activity[] = []
+  for (const item of loadActivity()) {
+    if (item.ok || item.mode !== "quiz" || item.letter !== session.letter) continue
+    if (item.at > session.at || session.at - item.at > 2 * 60 * 1000) continue
+    if (seen.has(item.en)) continue
+    seen.add(item.en)
+    matches.push(item)
+  }
+  return matches.reverse().slice(0, limit)
+}
+
 function dayKey(timestamp: number) {
   const date = new Date(timestamp)
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`

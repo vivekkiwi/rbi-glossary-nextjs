@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 
-export function PayButton() {
+export function PayButton({
+  nextHref = "/practice?letter=B&mode=quiz&autostart=1",
+  label = "Pay ₹499",
+}: {
+  nextHref?: string
+  label?: string
+}) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -41,6 +47,8 @@ export function PayButton() {
           })
           const data = await verifyRes.json()
           if (data.success) {
+            await supabase.auth.refreshSession()
+            router.push(nextHref)
             router.refresh()
           } else {
             alert("Payment verification failed")
@@ -72,7 +80,7 @@ export function PayButton() {
         onClick={handlePayment}
         disabled={loading}
       >
-        {loading ? "Processing..." : "Pay with Razorpay"}
+        {loading ? "Processing..." : label}
       </Button>
     </>
   )

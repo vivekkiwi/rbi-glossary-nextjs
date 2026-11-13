@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
-import { recordAnswer, recordQuizSession } from "@/lib/progress"
+import { PayButton } from "@/components/pay-button"
+import { loadSessions, recentQuizMisses, recordAnswer, recordQuizSession, type QuizSession } from "@/lib/progress"
 
 type Term = { en: string; hi: string; letter: string }
 type Mode = "quiz" | "flash" | "guess"
@@ -37,6 +39,8 @@ function makeQuestion(term: Term, pool: Term[], type: "en2hi" | "hi2en" | "mixed
   }
 }
 
+const SAVE_HREF = `/login?next=${encodeURIComponent("/practice?saved=1")}`
+
 const modes: { id: Mode; title: string; hint: string; className: string }[] = [
   { id: "quiz", title: "Quiz", hint: "Pick the right meaning", className: "data-[on=true]:border-blue-400 data-[on=true]:bg-blue-500/15" },
   { id: "flash", title: "Flashcards", hint: "Flip, then rate yourself", className: "data-[on=true]:border-violet-400 data-[on=true]:bg-violet-500/15" },
@@ -64,48 +68,86 @@ export default function PracticePage() {
   const [guessEnglishPrompt, setGuessEnglishPrompt] = useState(true)
   const [guessAnswer, setGuessAnswer] = useState("")
   const [guessFeedback, setGuessFeedback] = useState<{ ok: boolean; answer: string } | null>(null)
+  const [misses, setMisses] = useState<Term[]>([])
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [hasPaid, setHasPaid] = useState(false)
+  const [pendingLetter, setPendingLetter] = useState<string | null>(null)
+  const [savedRound, setSavedRound] = useState<{ session: QuizSession; misses: { en: string; hi: string }[] } | null>(null)
   const guessInput = useRef<HTMLInputElement>(null)
   const autoStarted = useRef(false)
+  const loaded = useRef(false)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    if (loaded.current) return
+    loaded.current = true
     const checkAccess = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.user_metadata?.has_paid !== true) {
-        router.push("/dashboard")
-        return
+      let user: { email?: string; user_metadata?: { has_paid?: boolean } } | null = null
+      try {
+        const result = await supabase.auth.getUser()
+        user = result.data.user
+      } catch {
+        user = null
       }
+      const paid = user?.user_metadata?.has_paid === true
+      const params = new URLSearchParams(window.location.search)
+      const letter = params.get("letter")?.toUpperCase()
+      const nextMode = params.get("mode")
+      setHasPaid(paid)
+      setUserEmail(user?.email ?? null)
+      if (paid && letter && /^[A-Z]$/.test(letter)) setSelectedLetter(letter)
+      if (user && !paid && letter && /^[A-Z]$/.test(letter) && letter !== "A") setPendingLetter(letter)
+      if (user && (nextMode === "quiz" || nextMode === "flash" || nextMode === "guess")) setMode(nextMode)
+      if (user && params.get("saved") === "1") {
+        const session = loadSessions()[0]
+        if (session) {
+          setSavedRound({
+            session,
+            misses: recentQuizMisses(session).map((item) => ({ en: item.en, hi: item.hi })),
+          })
+        }
+      }
+      let glossary: Term[] = []
       try {
         const res = await fetch("/terms.json")
         const text = await res.text()
         const data = JSON.parse(text)
         if (!Array.isArray(data)) {
           setLoadError("The glossary file is empty. public/terms.json does not contain the term list.")
-          setTerms([])
         } else {
-          setTerms(
-            data
-              .filter((term) => term && typeof term.en === "string")
-              .map((term) => ({
-                en: term.en,
-                hi: typeof term.hi === "string" ? term.hi : "",
-                letter: (term.letter || term.en || "A").trim().charAt(0).toUpperCase(),
-              }))
-          )
+          glossary = data
+            .filter((term) => term && typeof term.en === "string")
+            .map((term) => ({
+              en: term.en,
+              hi: typeof term.hi === "string" ? term.hi : "",
+              letter: (term.letter || term.en || "A").trim().charAt(0).toUpperCase(),
+            }))
+          setTerms(glossary)
         }
       } catch {
         setLoadError("The glossary file could not be read.")
       }
+      if (!user) {
+        const pool = glossary.filter((term) => term.letter === "A")
+        const count = Math.min(10, pool.length)
+        if (count > 0) {
+          setMode("quiz")
+          setSelectedLetter("A")
+          setQuizCount(10)
+          setQuizType("mixed")
+          setMisses([])
+          setQuestions(shuffle(pool).slice(0, count).map((term) => makeQuestion(term, pool, "mixed")))
+          setQuizIndex(0)
+          setQuizScore(0)
+          setPicked(null)
+          setQuizStarted(true)
+        }
+      }
       setLoading(false)
     }
     checkAccess()
-    const params = new URLSearchParams(window.location.search)
-    const letter = params.get("letter")?.toUpperCase()
-    const nextMode = params.get("mode")
-    if (letter && /^[A-Z]$/.test(letter)) setSelectedLetter(letter)
-    if (nextMode === "quiz" || nextMode === "flash" || nextMode === "guess") setMode(nextMode)
-  }, [router, supabase])
+  }, [supabase])
 
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
   const letterTerms = terms.filter((term) => term.letter === selectedLetter)
@@ -123,8 +165,12 @@ export default function PracticePage() {
 
   const startQuiz = () => {
     if (letterTerms.length === 0) return
-    const count = Math.min(quizCount, letterTerms.length)
-    setQuestions(shuffle(letterTerms).slice(0, count).map((term) => makeQuestion(term, letterTerms, quizType)))
+    const type = userEmail ? quizType : "mixed"
+    const count = Math.min(userEmail ? quizCount : 10, letterTerms.length)
+    setSavedRound(null)
+    setPendingLetter(null)
+    setMisses([])
+    setQuestions(shuffle(letterTerms).slice(0, count).map((term) => makeQuestion(term, letterTerms, type)))
     setQuizIndex(0)
     setQuizScore(0)
     setPicked(null)
@@ -137,6 +183,7 @@ export default function PracticePage() {
     const nextScore = quizScore + (correct ? 1 : 0)
     setPicked(option)
     if (correct) setQuizScore(nextScore)
+    else setMisses((current) => current.some((item) => item.en === currentQuestion.term.en) ? current : [...current, currentQuestion.term])
     recordAnswer(currentQuestion.term, correct, "quiz")
     if (quizIndex + 1 >= questions.length) {
       recordQuizSession({ letter: selectedLetter, correct: nextScore, total: questions.length })
@@ -148,7 +195,8 @@ export default function PracticePage() {
   }
 
   const startFlash = () => {
-    if (letterTerms.length === 0) return
+    if (!userEmail || letterTerms.length === 0) return
+    if (!hasPaid && selectedLetter !== "A") return
     setDeck(shuffle(letterTerms))
     setFlashIndex(0)
     setShowHindi(false)
@@ -167,9 +215,9 @@ export default function PracticePage() {
   }
 
   const nextGuess = () => {
-    const pool = letterTerms.length ? letterTerms : terms
-    if (!pool.length) return
-    const term = pool[Math.floor(Math.random() * pool.length)]
+    if (!userEmail || !letterTerms.length) return
+    if (!hasPaid && selectedLetter !== "A") return
+    const term = letterTerms[Math.floor(Math.random() * letterTerms.length)]
     setGuessTerm(term)
     setGuessEnglishPrompt(Math.random() > 0.5)
     setGuessAnswer("")
@@ -186,15 +234,19 @@ export default function PracticePage() {
   }
 
   useEffect(() => {
-    if (loading || autoStarted.current || letterTerms.length === 0) return
-    const requested = new URLSearchParams(window.location.search).get("mode")
-    if (requested !== "flash" && requested !== "guess") return
+    if (loading || !userEmail || !hasPaid || autoStarted.current || letterTerms.length === 0) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("saved") === "1") return
+    const requested = params.get("mode")
+    const shouldStart = params.get("autostart") === "1" || requested === "flash" || requested === "guess"
+    if (!shouldStart) return
     autoStarted.current = true
     if (requested === "flash") startFlash()
-    if (requested === "guess") nextGuess()
-    // Start once when the glossary for the requested letter is ready.
+    else if (requested === "guess") nextGuess()
+    else startQuiz()
+    // Start once when the paid letter requested in the URL is ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, letterTerms.length, selectedLetter])
+  }, [loading, userEmail, hasPaid, letterTerms.length, selectedLetter])
 
   useEffect(() => {
     if (mode === "guess" && guessTerm && !guessFeedback) guessInput.current?.focus()
@@ -223,6 +275,9 @@ export default function PracticePage() {
     return () => window.removeEventListener("keydown", onKey)
   })
 
+  const shownMisses = misses.slice(0, 3)
+  const nextQuizHref = `/practice?letter=${pendingLetter || "B"}&mode=quiz&autostart=1`
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -236,50 +291,101 @@ export default function PracticePage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Letter {selectedLetter} · {letterTerms.length.toLocaleString()} terms</p>
+            <p className="text-sm text-muted-foreground">
+              {userEmail
+                ? `Letter ${selectedLetter} · ${letterTerms.length.toLocaleString()} terms`
+                : "Letter A · 10 questions · no account"}
+            </p>
             <h1 className="text-3xl font-bold">Practice</h1>
           </div>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>Dashboard</Button>
+          {userEmail && (
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>Dashboard</Button>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          {modes.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-on={mode === item.id}
-              className={`rounded-xl border border-border px-3 py-3 text-left transition-colors hover:bg-secondary/50 ${item.className}`}
-              onClick={() => setMode(item.id)}
-            >
-              <span className="block font-semibold">{item.title}</span>
-              <span className="mt-1 hidden text-xs text-muted-foreground sm:block">{item.hint}</span>
-            </button>
-          ))}
-        </div>
+        {userEmail && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              {modes.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-on={mode === item.id}
+                  className={`rounded-xl border border-border px-3 py-3 text-left transition-colors hover:bg-secondary/50 ${item.className}`}
+                  onClick={() => {
+                    setPendingLetter(null)
+                    setMode(item.id)
+                  }}
+                >
+                  <span className="block font-semibold">{item.title}</span>
+                  <span className="mt-1 hidden text-xs text-muted-foreground sm:block">{item.hint}</span>
+                </button>
+              ))}
+            </div>
 
-        <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-[repeat(13,minmax(0,1fr))]">
-          {letters.map((letter) => (
-            <button
-              key={letter}
-              type="button"
-              className={`h-9 rounded-md text-sm font-medium ${selectedLetter === letter ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-muted-foreground hover:text-foreground"}`}
-              onClick={() => {
-                setSelectedLetter(letter)
-                resetSession()
-              }}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
+            <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-[repeat(13,minmax(0,1fr))]">
+              {letters.map((letter) => {
+                const locked = !hasPaid && letter !== "A"
+                return (
+                  <button
+                    key={letter}
+                    type="button"
+                    className={`h-9 rounded-md text-sm font-medium ${pendingLetter === letter ? "bg-primary text-primary-foreground" : selectedLetter === letter && !pendingLetter ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-muted-foreground hover:text-foreground"} ${locked ? "opacity-70" : ""}`}
+                    onClick={() => {
+                      if (locked) {
+                        resetSession()
+                        setPendingLetter(letter)
+                        return
+                      }
+                      setPendingLetter(null)
+                      setSelectedLetter(letter)
+                      resetSession()
+                    }}
+                  >
+                    {letter}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         <section className="rounded-2xl border bg-card p-5 sm:p-8">
           {loadError ? (
             <p>{loadError}</p>
+          ) : pendingLetter && !hasPaid ? (
+            <div className="space-y-6 text-center">
+              <div>
+                <p className="text-sm uppercase tracking-wide text-muted-foreground">Letter {pendingLetter}</p>
+                <h2 className="mt-2 text-2xl font-semibold">B–Z unlocks with one payment</h2>
+                <p className="mt-2 text-muted-foreground">Letter A stays free. ₹499 opens every other letter and starts the {pendingLetter} quiz.</p>
+              </div>
+              <p className="text-5xl font-bold text-green-400">₹499</p>
+              <PayButton nextHref={nextQuizHref} label={`Unlock and start letter ${pendingLetter}`} />
+            </div>
           ) : letterTerms.length === 0 ? (
             <p>No terms for letter {selectedLetter}.</p>
           ) : mode === "quiz" ? (
             !quizStarted ? (
+              savedRound ? (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <p className="text-sm uppercase tracking-wide text-muted-foreground">Round saved · letter {savedRound.session.letter}</p>
+                    <p className="text-6xl font-bold">{savedRound.session.total ? Math.round((savedRound.session.correct / savedRound.session.total) * 100) : 0}%</p>
+                    <p className="text-lg">{savedRound.session.correct} of {savedRound.session.total} correct</p>
+                  </div>
+                  <MissedWords misses={savedRound.misses} />
+                  {!hasPaid && (
+                    <>
+                      <p className="text-center text-muted-foreground">Letter A stays free. ₹499 unlocks B–Z and starts the next quiz.</p>
+                      <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" label="Unlock B–Z and start letter B" />
+                    </>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <Button size="lg" variant="outline" onClick={startQuiz}>Practice letter A again</Button>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-semibold">Quiz letter {selectedLetter}</h2>
@@ -311,15 +417,35 @@ export default function PracticePage() {
                 </div>
                 <Button size="lg" className="w-full" onClick={startQuiz}>Start quiz</Button>
               </div>
+              )
             ) : quizDone ? (
-              <div className="space-y-6 text-center">
-                <p className="text-sm uppercase tracking-wide text-muted-foreground">Letter {selectedLetter}</p>
-                <p className="text-6xl font-bold">{questions.length ? Math.round((quizScore / questions.length) * 100) : 0}%</p>
-                <p className="text-lg">{quizScore} of {questions.length} correct</p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <Button size="lg" onClick={startQuiz}>Play again</Button>
-                  <Button size="lg" variant="outline" onClick={resetSession}>Change settings</Button>
+              <div className="space-y-6">
+                <div className="text-center">
+                  <p className="text-sm uppercase tracking-wide text-muted-foreground">Letter {selectedLetter}</p>
+                  <p className="text-6xl font-bold">{questions.length ? Math.round((quizScore / questions.length) * 100) : 0}%</p>
+                  <p className="text-lg">{quizScore} of {questions.length} correct</p>
                 </div>
+                <MissedWords misses={shownMisses.map((term) => ({ en: term.en, hi: term.hi }))} />
+                {!userEmail ? (
+                  <div className="space-y-3 text-center">
+                    <p className="text-muted-foreground">Sign in with Google to save this round. Letter A stays free.</p>
+                    <Link href={SAVE_HREF} className="block">
+                      <Button size="lg" className="w-full">Continue with Google</Button>
+                    </Link>
+                    <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
+                  </div>
+                ) : !hasPaid ? (
+                  <div className="space-y-3">
+                    <p className="text-center text-muted-foreground">Letter A stays free. ₹499 unlocks B–Z and starts the next quiz.</p>
+                    <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" label="Unlock B–Z and start letter B" />
+                    <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <Button size="lg" onClick={startQuiz}>Play again</Button>
+                    <Button size="lg" variant="outline" onClick={resetSession}>Change settings</Button>
+                  </div>
+                )}
               </div>
             ) : currentQuestion ? (
               <div className="space-y-6">
@@ -428,6 +554,25 @@ export default function PracticePage() {
           )}
         </section>
       </div>
+    </div>
+  )
+}
+
+function MissedWords({ misses }: { misses: { en: string; hi: string }[] }) {
+  if (misses.length === 0) {
+    return <p className="text-center text-muted-foreground">No misses in this round.</p>
+  }
+  return (
+    <div className="space-y-3 text-left">
+      <p className="text-sm font-medium">Missed words</p>
+      <ul className="space-y-3">
+        {misses.slice(0, 3).map((term) => (
+          <li key={term.en} className="flex items-baseline justify-between gap-4 border-b pb-3 last:border-0 last:pb-0">
+            <span className="font-medium">{term.en}</span>
+            <span className="text-muted-foreground">{term.hi}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

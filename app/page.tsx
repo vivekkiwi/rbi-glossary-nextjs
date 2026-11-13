@@ -28,9 +28,9 @@ const modes = [
 ]
 
 const steps = [
-  ["Sign in", "Use your Google account. There is no password to remember."],
-  ["Unlock once", "A single ₹499 payment opens every letter and every practice mode."],
-  ["Practice daily", "Pick a letter. Your accuracy, streak, and weak terms stay on the dashboard."],
+  ["Practice letter A", "Ten mixed questions. No account."],
+  ["Save the round", "Google sign-in keeps the score and the three words you missed. Letter A stays free."],
+  ["Unlock B–Z", "A single ₹499 payment opens the rest and starts the next quiz."],
 ]
 
 export const metadata: Metadata = {
@@ -48,14 +48,14 @@ const samples = [
 export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const nextHref = user ? "/dashboard" : "/login"
-  const nextLabel = user ? "Go to dashboard" : "Start practicing"
+  const nextHref = "/practice"
+  const nextLabel = "Start practicing"
 
   return (
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <p className="font-semibold tracking-tight">Glossary Mastery</p>
-        <Link href={nextHref}>
+        <Link href={user ? "/dashboard" : "/login"}>
           <Button variant="outline">{user ? "Dashboard" : "Sign in"}</Button>
         </Link>
       </header>
@@ -79,7 +79,7 @@ export default async function Home() {
               <Link href={nextHref}>
                 <Button size="lg">{nextLabel}</Button>
               </Link>
-              {!user && <p className="text-sm text-muted-foreground">Google sign-in · one-time ₹499</p>}
+              {!user && <p className="text-sm text-muted-foreground">Letter A is free · ₹499 unlocks B–Z</p>}
             </div>
             <InstallHint />
           </div>
@@ -130,10 +130,10 @@ export default async function Home() {
           <div className="rounded-2xl border bg-card p-6 text-center">
             <p className="text-sm text-muted-foreground">Lifetime access</p>
             <p className="mt-2 text-5xl font-bold text-green-400">₹499</p>
-            <p className="mt-2 text-sm text-muted-foreground">One payment. Every letter. No subscription.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Letter A is free. One payment opens every other letter.</p>
             <Link href={nextHref} className="mt-5 block">
               <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
-                {user ? "Open dashboard" : "Unlock and practice"}
+                {user ? "Continue practicing" : "Practice letter A free"}
               </Button>
             </Link>
           </div>
@@ -145,7 +145,7 @@ export default async function Home() {
             Glossary Mastery covers the banking vocabulary used in the RBI glossary: deposits, credit, foreign exchange, payment systems, and supervision. Every term has an English headword and a Hindi equivalent, grouped from A to Z. A quiz round can run English to Hindi or Hindi to English. Flashcards show one side until you flip. Guess asks you to type the other language.
           </p>
           <p className="text-muted-foreground">
-            Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. Lifetime access is a single ₹499 payment. Signed-in practice pages stay out of search results.
+            Letter A is free: ten mixed questions, then Google sign-in if you want the score saved. Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. ₹499 unlocks B–Z. Signed-in practice pages stay out of search results.
           </p>
         </section>
       </main>
