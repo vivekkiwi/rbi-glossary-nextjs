@@ -39,25 +39,41 @@ def clean_chars(chars):
 
     A duplicate is a 1-4 char run that repeats the run just before it, where that
     earlier run is zero-width (the invisible ToUnicode text of a ligature glyph).
-    Legit doubled letters (ममता, सम्मान) never repeat a zero-width run.
+    Each zero-width run cancels only ONE duplicate: in "व्ययय" the invisible य
+    cancels the duplicate य, and the real second य of "व्यय" is kept.
+    Plain doubled letters (ममता, सम्मान) never repeat a zero-width run.
     """
     out, i = [], 0
     while i < len(chars):
         for k in (4, 3, 2, 1):
             if i + k <= len(chars) and len(out) >= k:
                 prev = out[-k:]
-                if [c["c"] for c in prev] == [c["c"] for c in chars[i : i + k]] and all(c["w"] == 0 for c in prev):
+                if [c["c"] for c in prev] == [c["c"] for c in chars[i : i + k]] and all(
+                    c["w"] == 0 and not c.get("used") for c in prev
+                ):
+                    for c in prev:
+                        c["used"] = True
                     i += k
                     break
         else:
-            out.append(chars[i])
+            out.append(dict(chars[i]))
             i += 1
     return out
 
 
+# Typos in the PDF itself:
+#  - a stray space inside a word (a corpus scan for split words found only this one)
+#  - ॠण (Sanskrit vowel ॠ, never used in Hindi) for ऋण in 6 entries; it would also
+#    make typed answers of "ऋण" fail in guess mode
+SPLIT_WORDS = {"प्राथमि क": "प्राथमिक", "ॠण": "ऋण"}
+
+
 def norm(s):
     s = unicodedata.normalize("NFC", s.replace("\t", " ").replace(" ", " "))
-    return re.sub(r"\s+", " ", s).strip()
+    s = re.sub(r"\s+", " ", s).strip()
+    for broken, fixed in SPLIT_WORDS.items():
+        s = s.replace(broken, fixed)
+    return s
 
 
 def walk_rows(elements):
