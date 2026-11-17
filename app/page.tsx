@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import { DemoVideo } from "@/components/demo-video"
 import { InstallHint } from "@/components/pwa"
+import { TelegramJoin } from "@/components/telegram-join"
+import { monetisationEnabled } from "@/lib/flags"
 import { siteDescription, siteName, siteUrl } from "@/lib/site"
 
 const modes = [
@@ -27,10 +29,16 @@ const modes = [
   },
 ]
 
-const steps = [
+const paidSteps = [
   ["Practice letter A", "Ten mixed questions. No account."],
   ["Save the round", "Google sign-in keeps the score and the three words you missed. Letter A stays free."],
   ["Unlock B–Z", "A single ₹499 payment opens the rest and starts the next quiz."],
+]
+
+const openSteps = [
+  ["Pick a letter", "Quiz, flashcards, or typed recall across A–Z. No account."],
+  ["Save the round", "Google sign-in keeps the score and the words you missed."],
+  ["See what stuck", "Accuracy, a streak, and the terms that still slip."],
 ]
 
 export const metadata: Metadata = {
@@ -46,6 +54,8 @@ const samples = [
 ]
 
 export default async function Home() {
+  const paymentsOn = monetisationEnabled()
+  const steps = paymentsOn ? paidSteps : openSteps
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const nextHref = "/practice"
@@ -79,7 +89,7 @@ export default async function Home() {
               <Link href={nextHref}>
                 <Button size="lg">{nextLabel}</Button>
               </Link>
-              {!user && <p className="text-sm text-muted-foreground">Letter A is free · ₹499 unlocks B–Z</p>}
+              {paymentsOn && !user && <p className="text-sm text-muted-foreground">Letter A is free · ₹499 unlocks B–Z</p>}
             </div>
             <InstallHint />
           </div>
@@ -96,6 +106,8 @@ export default async function Home() {
             </ul>
           </div>
         </section>
+
+        <TelegramJoin location="home_hero" />
 
         <DemoVideo />
 
@@ -128,14 +140,29 @@ export default async function Home() {
           </ol>
 
           <div className="rounded-2xl border bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">Lifetime access</p>
-            <p className="mt-2 text-5xl font-bold text-green-400">₹499</p>
-            <p className="mt-2 text-sm text-muted-foreground">Letter A is free. One payment opens every other letter.</p>
-            <Link href={nextHref} className="mt-5 block">
-              <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
-                {user ? "Continue practicing" : "Practice letter A free"}
-              </Button>
-            </Link>
+            {paymentsOn ? (
+              <>
+                <p className="text-sm text-muted-foreground">Lifetime access</p>
+                <p className="mt-2 text-5xl font-bold text-green-400">₹499</p>
+                <p className="mt-2 text-sm text-muted-foreground">Letter A is free. One payment opens every other letter.</p>
+                <Link href={nextHref} className="mt-5 block">
+                  <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
+                    {user ? "Continue practicing" : "Practice letter A free"}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">Every letter</p>
+                <p className="mt-2 text-5xl font-bold text-green-400">A–Z</p>
+                <p className="mt-2 text-sm text-muted-foreground">Quiz, flashcards, and typed recall are open. No payment.</p>
+                <Link href={nextHref} className="mt-5 block">
+                  <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
+                    {user ? "Continue practicing" : "Start practicing"}
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </section>
 
@@ -145,14 +172,19 @@ export default async function Home() {
             Glossary Mastery covers the banking vocabulary used in the RBI glossary: deposits, credit, foreign exchange, payment systems, and supervision. Every term has an English headword and a Hindi equivalent, grouped from A to Z. A quiz round can run English to Hindi or Hindi to English. Flashcards show one side until you flip. Guess asks you to type the other language.
           </p>
           <p className="text-muted-foreground">
-            Letter A is free: ten mixed questions, then Google sign-in if you want the score saved. Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. ₹499 unlocks B–Z. Signed-in practice pages stay out of search results.
+            {paymentsOn
+              ? "Letter A is free: ten mixed questions, then Google sign-in if you want the score saved. Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. ₹499 unlocks B–Z. Signed-in practice pages stay out of search results."
+              : "Every letter is open: quiz, flashcards, or typed recall, then Google sign-in if you want the score saved. Progress stays in this browser: accuracy, a practice streak, and the terms you miss most often. Signed-in practice pages stay out of search results."}
           </p>
         </section>
       </main>
       <footer className="border-t">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>{siteName}</p>
-          <p>11,537 English–Hindi banking terms</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+            <TelegramJoin variant="link" location="home_footer" />
+            <p>11,537 English–Hindi banking terms</p>
+          </div>
         </div>
       </footer>
       <script
@@ -167,11 +199,15 @@ export default async function Home() {
             applicationCategory: "EducationalApplication",
             operatingSystem: "Web",
             inLanguage: ["en", "hi"],
-            offers: {
-              "@type": "Offer",
-              price: "499",
-              priceCurrency: "INR",
-            },
+            ...(paymentsOn
+              ? {
+                  offers: {
+                    "@type": "Offer",
+                    price: "499",
+                    priceCurrency: "INR",
+                  },
+                }
+              : {}),
           }),
         }}
       />

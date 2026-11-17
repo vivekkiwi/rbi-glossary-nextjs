@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import Script from "next/script"
 import "./globals.css"
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next"
 import { Analytics } from "@/components/analytics"
 import { PwaRegister } from "@/components/pwa"
 import { siteDescription, siteName, siteUrl } from "@/lib/site"
@@ -77,6 +78,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <PwaRegister />
         <Analytics />
+        <VercelAnalytics />
         {children}
       </body>
     </html>

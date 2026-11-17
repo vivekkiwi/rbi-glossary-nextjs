@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import Razorpay from "razorpay"
+import { monetisationEnabled } from "@/lib/flags"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST() {
+  if (!monetisationEnabled()) {
+    return NextResponse.json({ error: "Payments are disabled" }, { status: 404 })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

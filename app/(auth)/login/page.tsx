@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { trackEvent } from "@/lib/analytics"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +17,7 @@ export default function LoginPage() {
 
     const next = new URLSearchParams(window.location.search).get("next")
     const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard"
+    trackEvent("sign_in_started", { source: "login" })
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

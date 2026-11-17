@@ -1,3 +1,4 @@
+import { monetisationEnabled } from "@/lib/flags"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -5,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { PayButton } from "@/components/pay-button"
 import { ProgressBoard } from "@/components/progress-board"
+import { TelegramJoin } from "@/components/telegram-join"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -14,7 +16,7 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const hasPaid = user.user_metadata?.has_paid === true
+  const hasPaid = !monetisationEnabled() || user.user_metadata?.has_paid === true
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -43,11 +45,14 @@ export default async function DashboardPage() {
                 <Link href="/practice">
                   <Button variant="outline" className="w-full">Practice letter A</Button>
                 </Link>
-                <PayButton label="Unlock B–Z · ₹499" />
+                <PayButton label="Unlock B–Z · ₹499" source="dashboard" />
               </div>
             </CardContent>
           </Card>
         )}
+        <div className="mb-6">
+          <TelegramJoin variant="compact" location="dashboard" />
+        </div>
         <ProgressBoard />
       </div>
     </div>
