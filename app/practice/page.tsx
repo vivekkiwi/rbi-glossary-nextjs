@@ -94,7 +94,7 @@ export default function PracticePage() {
         user = null
       }
       const paymentsOn = monetisationEnabled()
-      const paid = !paymentsOn || user?.user_metadata?.has_paid === true
+      const paid = Boolean(user) && (!paymentsOn || user?.user_metadata?.has_paid === true)
       const params = new URLSearchParams(window.location.search)
       const letter = params.get("letter")?.toUpperCase()
       const nextMode = params.get("mode")
@@ -132,7 +132,7 @@ export default function PracticePage() {
       } catch {
         setLoadError("The glossary file could not be read.")
       }
-      if (!user && paymentsOn) {
+      if (!user) {
         const pool = glossary.filter((term) => term.letter === "A")
         const count = Math.min(10, pool.length)
         if (count > 0) {
@@ -169,13 +169,10 @@ export default function PracticePage() {
     setSavedRound(null)
   }
 
-  const openProduct = !monetisationEnabled()
-
   const startQuiz = () => {
     if (letterTerms.length === 0) return
-    const fullPractice = Boolean(userEmail) || openProduct
-    const type = fullPractice ? quizType : "mixed"
-    const count = Math.min(fullPractice ? quizCount : 10, letterTerms.length)
+    const type = userEmail ? quizType : "mixed"
+    const count = Math.min(userEmail ? quizCount : 10, letterTerms.length)
     setSavedRound(null)
     setPendingLetter(null)
     setMisses([])
@@ -206,8 +203,7 @@ export default function PracticePage() {
   }
 
   const startFlash = () => {
-    if (letterTerms.length === 0) return
-    if (!openProduct && !userEmail) return
+    if (!userEmail || letterTerms.length === 0) return
     if (!hasPaid && selectedLetter !== "A") return
     trackEvent("practice_started", { mode: "flash", letter: selectedLetter, count: letterTerms.length })
     setDeck(shuffle(letterTerms))
@@ -228,8 +224,7 @@ export default function PracticePage() {
   }
 
   const nextGuess = () => {
-    if (!letterTerms.length) return
-    if (!openProduct && !userEmail) return
+    if (!userEmail || !letterTerms.length) return
     if (!hasPaid && selectedLetter !== "A") return
     if (!guessTerm) trackEvent("practice_started", { mode: "guess", letter: selectedLetter, count: letterTerms.length })
     const term = letterTerms[Math.floor(Math.random() * letterTerms.length)]
@@ -308,7 +303,7 @@ export default function PracticePage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">
-              {userEmail || openProduct
+              {userEmail
                 ? `Letter ${selectedLetter} · ${letterTerms.length.toLocaleString()} terms`
                 : "Letter A · 10 questions · no account"}
             </p>
@@ -319,7 +314,7 @@ export default function PracticePage() {
           )}
         </div>
 
-        {(userEmail || openProduct) && (
+        {userEmail && (
           <>
             <div className="grid grid-cols-3 gap-2">
               {modes.map((item) => (
@@ -447,11 +442,7 @@ export default function PracticePage() {
                 <MissedWords misses={shownMisses.map((term) => ({ en: term.en, hi: term.hi }))} />
                 {!userEmail ? (
                   <div className="space-y-3 text-center">
-                    <p className="text-muted-foreground">
-                      {openProduct
-                        ? "Sign in with Google to save this round."
-                        : "Sign in with Google to save this round. Letter A stays free."}
-                    </p>
+                    <p className="text-muted-foreground">Sign in with Google to save this round. Letter A stays free.</p>
                     <Link href={SAVE_HREF} className="block" onClick={() => trackEvent("sign_in_started", { source: "quiz_result" })}>
                       <Button size="lg" className="w-full">Continue with Google</Button>
                     </Link>
