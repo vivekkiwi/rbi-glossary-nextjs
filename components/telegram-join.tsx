@@ -1,5 +1,6 @@
 "use client"
 
+import { trackEvent } from "@/lib/analytics"
 import { telegramChannel, telegramUrl } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
@@ -14,9 +15,7 @@ function TelegramIcon({ className }: { className?: string }) {
 }
 
 function trackClick(location: string) {
-  if (typeof window !== "undefined" && typeof window.gtag === "function") {
-    window.gtag("event", "telegram_join_click", { location, channel: telegramChannel })
-  }
+  trackEvent("telegram_join_click", { location, channel: telegramChannel })
 }
 
 /** Invites visitors to the daily Telegram quiz. Renders nothing until a channel is configured. */

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { PayButton } from "@/components/pay-button"
 import { TelegramJoin } from "@/components/telegram-join"
+import { trackEvent } from "@/lib/analytics"
+import { monetisationEnabled } from "@/lib/flags"
 import { loadSessions, recentQuizMisses, recordAnswer, recordQuizSession, type QuizSession } from "@/lib/progress"
 
 type Term = { en: string; hi: string; letter: string }
@@ -91,7 +93,8 @@ export default function PracticePage() {
       } catch {
         user = null
       }
-      const paid = user?.user_metadata?.has_paid === true
+      const paymentsOn = monetisationEnabled()
+      const paid = !paymentsOn || user?.user_metadata?.has_paid === true
       const params = new URLSearchParams(window.location.search)
       const letter = params.get("letter")?.toUpperCase()
       const nextMode = params.get("mode")
@@ -129,7 +132,7 @@ export default function PracticePage() {
       } catch {
         setLoadError("The glossary file could not be read.")
       }
-      if (!user) {
+      if (!user && paymentsOn) {
         const pool = glossary.filter((term) => term.letter === "A")
         const count = Math.min(10, pool.length)
         if (count > 0) {
@@ -143,6 +146,7 @@ export default function PracticePage() {
           setQuizScore(0)
           setPicked(null)
           setQuizStarted(true)
+          trackEvent("practice_started", { mode: "quiz", letter: "A", count: count })
         }
       }
       setLoading(false)
@@ -165,13 +169,17 @@ export default function PracticePage() {
     setSavedRound(null)
   }
 
+  const openProduct = !monetisationEnabled()
+
   const startQuiz = () => {
     if (letterTerms.length === 0) return
-    const type = userEmail ? quizType : "mixed"
-    const count = Math.min(userEmail ? quizCount : 10, letterTerms.length)
+    const fullPractice = Boolean(userEmail) || openProduct
+    const type = fullPractice ? quizType : "mixed"
+    const count = Math.min(fullPractice ? quizCount : 10, letterTerms.length)
     setSavedRound(null)
     setPendingLetter(null)
     setMisses([])
+    trackEvent("practice_started", { mode: "quiz", letter: selectedLetter, count })
     setQuestions(shuffle(letterTerms).slice(0, count).map((term) => makeQuestion(term, letterTerms, type)))
     setQuizIndex(0)
     setQuizScore(0)
@@ -189,6 +197,7 @@ export default function PracticePage() {
     recordAnswer(currentQuestion.term, correct, "quiz")
     if (quizIndex + 1 >= questions.length) {
       recordQuizSession({ letter: selectedLetter, correct: nextScore, total: questions.length })
+      trackEvent("quiz_finished", { letter: selectedLetter, correct: nextScore, total: questions.length })
     }
     window.setTimeout(() => {
       setQuizIndex((index) => index + 1)
@@ -197,8 +206,10 @@ export default function PracticePage() {
   }
 
   const startFlash = () => {
-    if (!userEmail || letterTerms.length === 0) return
+    if (letterTerms.length === 0) return
+    if (!openProduct && !userEmail) return
     if (!hasPaid && selectedLetter !== "A") return
+    trackEvent("practice_started", { mode: "flash", letter: selectedLetter, count: letterTerms.length })
     setDeck(shuffle(letterTerms))
     setFlashIndex(0)
     setShowHindi(false)
@@ -217,8 +228,10 @@ export default function PracticePage() {
   }
 
   const nextGuess = () => {
-    if (!userEmail || !letterTerms.length) return
+    if (!letterTerms.length) return
+    if (!openProduct && !userEmail) return
     if (!hasPaid && selectedLetter !== "A") return
+    if (!guessTerm) trackEvent("practice_started", { mode: "guess", letter: selectedLetter, count: letterTerms.length })
     const term = letterTerms[Math.floor(Math.random() * letterTerms.length)]
     setGuessTerm(term)
     setGuessEnglishPrompt(Math.random() > 0.5)
@@ -295,7 +308,7 @@ export default function PracticePage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">
-              {userEmail
+              {userEmail || openProduct
                 ? `Letter ${selectedLetter} · ${letterTerms.length.toLocaleString()} terms`
                 : "Letter A · 10 questions · no account"}
             </p>
@@ -306,7 +319,7 @@ export default function PracticePage() {
           )}
         </div>
 
-        {userEmail && (
+        {(userEmail || openProduct) && (
           <>
             <div className="grid grid-cols-3 gap-2">
               {modes.map((item) => (
@@ -316,6 +329,7 @@ export default function PracticePage() {
                   data-on={mode === item.id}
                   className={`rounded-xl border border-border px-3 py-3 text-left transition-colors hover:bg-secondary/50 ${item.className}`}
                   onClick={() => {
+                    trackEvent("mode_selected", { mode: item.id })
                     setPendingLetter(null)
                     setSavedRound(null)
                     setMode(item.id)
@@ -336,6 +350,7 @@ export default function PracticePage() {
                     type="button"
                     className={`h-9 rounded-md text-sm font-medium ${pendingLetter === letter ? "bg-primary text-primary-foreground" : selectedLetter === letter && !pendingLetter ? "bg-primary text-primary-foreground" : "bg-secondary/70 text-muted-foreground hover:text-foreground"} ${locked ? "opacity-70" : ""}`}
                     onClick={() => {
+                      trackEvent("letter_selected", { letter, locked })
                       if (locked) {
                         resetSession()
                         setPendingLetter(letter)
@@ -365,7 +380,7 @@ export default function PracticePage() {
                 <p className="mt-2 text-muted-foreground">Letter A stays free. ₹499 opens every other letter and starts the {pendingLetter} quiz.</p>
               </div>
               <p className="text-5xl font-bold text-green-400">₹499</p>
-              <PayButton nextHref={nextQuizHref} label={`Unlock and start letter ${pendingLetter}`} />
+              <PayButton nextHref={nextQuizHref} source="locked_letter" label={`Unlock and start letter ${pendingLetter}`} />
             </div>
           ) : letterTerms.length === 0 ? (
             <p>No terms for letter {selectedLetter}.</p>
@@ -382,7 +397,7 @@ export default function PracticePage() {
                   {!hasPaid && (
                     <>
                       <p className="text-center text-muted-foreground">Letter A stays free. ₹499 unlocks B–Z and starts the next quiz.</p>
-                      <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" label="Unlock B–Z and start letter B" />
+                      <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" source="saved_round" label="Unlock B–Z and start letter B" />
                     </>
                   )}
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -432,8 +447,12 @@ export default function PracticePage() {
                 <MissedWords misses={shownMisses.map((term) => ({ en: term.en, hi: term.hi }))} />
                 {!userEmail ? (
                   <div className="space-y-3 text-center">
-                    <p className="text-muted-foreground">Sign in with Google to save this round. Letter A stays free.</p>
-                    <Link href={SAVE_HREF} className="block">
+                    <p className="text-muted-foreground">
+                      {openProduct
+                        ? "Sign in with Google to save this round."
+                        : "Sign in with Google to save this round. Letter A stays free."}
+                    </p>
+                    <Link href={SAVE_HREF} className="block" onClick={() => trackEvent("sign_in_started", { source: "quiz_result" })}>
                       <Button size="lg" className="w-full">Continue with Google</Button>
                     </Link>
                     <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
@@ -441,7 +460,7 @@ export default function PracticePage() {
                 ) : !hasPaid ? (
                   <div className="space-y-3">
                     <p className="text-center text-muted-foreground">Letter A stays free. ₹499 unlocks B–Z and starts the next quiz.</p>
-                    <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" label="Unlock B–Z and start letter B" />
+                    <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" source="quiz_result" label="Unlock B–Z and start letter B" />
                     <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
                   </div>
                 ) : (

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import crypto from "crypto"
+import { monetisationEnabled } from "@/lib/flags"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
+  if (!monetisationEnabled()) {
+    return NextResponse.json({ success: false, error: "Payments are disabled" }, { status: 404 })
+  }
+
   const body = await request.json()
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body
 
