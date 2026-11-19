@@ -89,6 +89,8 @@ export function PayButton({
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <Button
         className="w-full bg-green-600 hover:bg-green-700"
+        data-cta="pay"
+        data-cta-location={source}
         onClick={handlePayment}
         disabled={loading}
       >

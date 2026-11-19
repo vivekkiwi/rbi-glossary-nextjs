@@ -6,14 +6,18 @@ type EventProps = Record<string, EventValue>
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void
+    clarity?: (...args: unknown[]) => void
   }
 }
 
-/** Sends a custom event to Vercel Web Analytics and, when configured, GA4. */
+/** Sends a custom event to Vercel Web Analytics, GA4, and Clarity when each is loaded. */
 export function trackEvent(name: string, properties?: EventProps) {
   if (typeof window === "undefined") return
   track(name, properties)
   if (typeof window.gtag === "function") {
     window.gtag("event", name, properties ?? {})
+  }
+  if (typeof window.clarity === "function") {
+    window.clarity("event", name)
   }
 }

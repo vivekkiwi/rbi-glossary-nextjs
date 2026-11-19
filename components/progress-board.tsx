@@ -49,6 +49,8 @@ function PracticeActions({ letter }: { letter: string }) {
         <Link
           key={action.title}
           href={action.href}
+          data-cta={`practice_${action.title.toLowerCase()}`}
+          data-cta-location="progress_board"
           className={`flex min-h-32 flex-col justify-between rounded-xl border p-5 transition-colors ${action.className}`}
         >
           <span className={`text-2xl font-semibold ${action.titleClass}`}>{action.title}</span>
@@ -183,7 +185,13 @@ export function ProgressBoard() {
             const answers = letter.correct + letter.wrong
             const accuracy = answers ? Math.round((letter.correct / answers) * 100) : 0
             return (
-              <Link key={letter.letter} href={`/practice?letter=${letter.letter}`} className="rounded-lg border p-3 hover:bg-secondary/40">
+              <Link
+                key={letter.letter}
+                href={`/practice?letter=${letter.letter}`}
+                data-cta={`letter_${letter.letter}`}
+                data-cta-location="progress_letters"
+                className="rounded-lg border p-3 hover:bg-secondary/40"
+              >
                 <div className="flex items-baseline justify-between">
                   <span className="text-lg font-semibold">{letter.letter}</span>
                   <span className="text-sm text-muted-foreground">{percent}%</span>

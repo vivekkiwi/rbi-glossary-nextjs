@@ -10,18 +10,21 @@ import { siteDescription, siteName, siteUrl } from "@/lib/site"
 
 const modes = [
   {
+    id: "quiz",
     title: "Quiz",
     detail: "Multiple choice from English to Hindi, or the other way. Rounds of 10, 20, 30, or 50.",
     className: "border-blue-500/40 bg-blue-500/10",
     label: "text-blue-300",
   },
   {
+    id: "flashcards",
     title: "Flashcards",
     detail: "Flip a term, then mark whether you knew it. Arrow keys move through the letter.",
     className: "border-violet-500/40 bg-violet-500/10",
     label: "text-violet-300",
   },
   {
+    id: "guess",
     title: "Guess",
     detail: "Read the term and type the other language. Enter checks the answer and loads the next one.",
     className: "border-emerald-500/40 bg-emerald-500/10",
@@ -66,7 +69,11 @@ export default async function Home() {
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <p className="font-semibold tracking-tight">Glossary Mastery</p>
-        <Link href={user ? "/dashboard" : "/login"}>
+        <Link
+          href={user ? "/dashboard" : "/login"}
+          data-cta={user ? "dashboard" : "sign_in"}
+          data-cta-location="home_header"
+        >
           <Button variant="outline">{user ? "Dashboard" : "Sign in"}</Button>
         </Link>
       </header>
@@ -87,7 +94,7 @@ export default async function Home() {
               11,537 English–Hindi banking terms, practiced by letter. Quiz, flip cards, or type the meaning, then see exactly which words still slip.
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <Link href={startHref}>
+              <Link href={startHref} data-cta="start_practicing" data-cta-location="home_hero">
                 <Button size="lg">{nextLabel}</Button>
               </Link>
               {paymentsOn && !user && <p className="text-sm text-muted-foreground">Letter A is free · ₹499 unlocks B–Z</p>}
@@ -117,6 +124,8 @@ export default async function Home() {
             <Link
               key={mode.title}
               href={nextHref}
+              data-cta={`mode_${mode.id}`}
+              data-cta-location="home_modes"
               className={`flex min-h-40 flex-col justify-between rounded-2xl border p-5 transition-colors hover:brightness-110 ${mode.className}`}
             >
               <span className={`text-2xl font-semibold ${mode.label}`}>{mode.title}</span>
@@ -146,7 +155,12 @@ export default async function Home() {
                 <p className="text-sm text-muted-foreground">Lifetime access</p>
                 <p className="mt-2 text-5xl font-bold text-green-400">₹499</p>
                 <p className="mt-2 text-sm text-muted-foreground">Letter A is free. One payment opens every other letter.</p>
-                <Link href={nextHref} className="mt-5 block">
+                <Link
+                  href={nextHref}
+                  data-cta={user ? "continue_practicing" : "practice_letter_a"}
+                  data-cta-location="home_offer"
+                  className="mt-5 block"
+                >
                   <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
                     {user ? "Continue practicing" : "Practice letter A free"}
                   </Button>
@@ -157,7 +171,12 @@ export default async function Home() {
                 <p className="text-sm text-muted-foreground">Every letter</p>
                 <p className="mt-2 text-5xl font-bold text-green-400">A–Z</p>
                 <p className="mt-2 text-sm text-muted-foreground">Sign in to quiz, flip cards, and type the meaning for every letter.</p>
-                <Link href={startHref} className="mt-5 block">
+                <Link
+                  href={startHref}
+                  data-cta={user ? "continue_practicing" : "start_practicing"}
+                  data-cta-location="home_offer"
+                  className="mt-5 block"
+                >
                   <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
                     {user ? "Continue practicing" : "Start practicing"}
                   </Button>

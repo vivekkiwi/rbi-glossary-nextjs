@@ -40,7 +40,14 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {message && <p className="text-sm text-red-500">{message}</p>}
-          <Button type="button" className="w-full gap-2" disabled={loading} onClick={handleGoogleLogin}>
+          <Button
+            type="button"
+            className="w-full gap-2"
+            disabled={loading}
+            data-cta="sign_in"
+            data-cta-location="login"
+            onClick={handleGoogleLogin}
+          >
             <GoogleIcon />
             {loading ? "Redirecting..." : "Continue with Google"}
           </Button>

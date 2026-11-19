@@ -40,6 +40,8 @@ export function DemoVideo() {
           <button
             type="button"
             onClick={start}
+            data-cta="play_demo"
+            data-cta-location="home_demo"
             className="absolute inset-0 cursor-pointer"
             aria-label="Play the Hindi glossary demo"
           >

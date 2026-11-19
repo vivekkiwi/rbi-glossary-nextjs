@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { trackEvent } from "@/lib/analytics"
 import { Button } from "@/components/ui/button"
 
 type InstallPrompt = Event & {
@@ -45,8 +46,13 @@ export function InstallHint() {
         <p className="text-sm">Add Glossary to your home screen and open it like an app.</p>
         <Button
           size="sm"
+          data-cta="install_app"
+          data-cta-location="home_hero"
           onClick={async () => {
+            trackEvent("install_prompted", { location: "home_hero" })
             await prompt.prompt()
+            const choice = await prompt.userChoice
+            trackEvent("install_choice", { location: "home_hero", outcome: choice.outcome })
             setPrompt(null)
           }}
         >

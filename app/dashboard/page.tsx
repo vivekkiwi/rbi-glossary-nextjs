@@ -27,7 +27,7 @@ export default async function DashboardPage() {
             <p className="text-muted-foreground">Welcome, {user.email}</p>
           </div>
           <form action="/api/auth/signout" method="post">
-            <Button variant="outline" type="submit">Logout</Button>
+            <Button variant="outline" type="submit" data-cta="logout" data-cta-location="dashboard">Logout</Button>
           </form>
         </div>
 
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
             <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-4xl font-bold text-green-500">₹499</p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-64">
-                <Link href="/practice">
+                <Link href="/practice" data-cta="practice_letter_a" data-cta-location="dashboard">
                   <Button variant="outline" className="w-full">Practice letter A</Button>
                 </Link>
                 <PayButton label="Unlock B–Z · ₹499" source="dashboard" />

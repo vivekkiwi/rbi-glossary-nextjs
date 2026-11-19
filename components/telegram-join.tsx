@@ -27,6 +27,8 @@ export function TelegramJoin({ variant = "card", location }: { variant?: Variant
       href={telegramUrl}
       target="_blank"
       rel="noopener noreferrer"
+      data-cta="telegram_join"
+      data-cta-location={location}
       onClick={() => trackClick(location)}
       className={className}
     >
