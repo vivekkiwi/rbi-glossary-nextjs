@@ -310,7 +310,7 @@ export default function PracticePage() {
             <h1 className="text-3xl font-bold">Practice</h1>
           </div>
           {userEmail && (
-            <Button variant="outline" onClick={() => router.push("/dashboard")}>Dashboard</Button>
+            <Button variant="outline" data-cta="dashboard" data-cta-location="practice" onClick={() => router.push("/dashboard")}>Dashboard</Button>
           )}
         </div>
 
@@ -396,7 +396,7 @@ export default function PracticePage() {
                     </>
                   )}
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <Button size="lg" variant="outline" onClick={startQuiz}>Practice letter {selectedLetter} again</Button>
+                    <Button size="lg" variant="outline" data-cta="play_again" data-cta-location="saved_round" onClick={startQuiz}>Practice letter {selectedLetter} again</Button>
                   </div>
                 </div>
               ) : (
@@ -429,7 +429,7 @@ export default function PracticePage() {
                     </Button>
                   ))}
                 </div>
-                <Button size="lg" className="w-full" onClick={startQuiz}>Start quiz</Button>
+                <Button size="lg" className="w-full" data-cta="start_quiz" data-cta-location="practice" onClick={startQuiz}>Start quiz</Button>
               </div>
               )
             ) : quizDone ? (
@@ -443,21 +443,27 @@ export default function PracticePage() {
                 {!userEmail ? (
                   <div className="space-y-3 text-center">
                     <p className="text-muted-foreground">Sign in with Google to save this round. Letter A stays free.</p>
-                    <Link href={SAVE_HREF} className="block" onClick={() => trackEvent("sign_in_started", { source: "quiz_result" })}>
+                    <Link
+                      href={SAVE_HREF}
+                      className="block"
+                      data-cta="sign_in"
+                      data-cta-location="quiz_result"
+                      onClick={() => trackEvent("sign_in_started", { source: "quiz_result" })}
+                    >
                       <Button size="lg" className="w-full">Continue with Google</Button>
                     </Link>
-                    <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
+                    <Button size="lg" variant="outline" className="w-full" data-cta="play_again" data-cta-location="quiz_result" onClick={startQuiz}>Play again</Button>
                   </div>
                 ) : !hasPaid ? (
                   <div className="space-y-3">
                     <p className="text-center text-muted-foreground">Letter A stays free. ₹499 unlocks B–Z and starts the next quiz.</p>
                     <PayButton nextHref="/practice?letter=B&mode=quiz&autostart=1" source="quiz_result" label="Unlock B–Z and start letter B" />
-                    <Button size="lg" variant="outline" className="w-full" onClick={startQuiz}>Play again</Button>
+                    <Button size="lg" variant="outline" className="w-full" data-cta="play_again" data-cta-location="quiz_result" onClick={startQuiz}>Play again</Button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <Button size="lg" onClick={startQuiz}>Play again</Button>
-                    <Button size="lg" variant="outline" onClick={resetSession}>Change settings</Button>
+                    <Button size="lg" data-cta="play_again" data-cta-location="quiz_result" onClick={startQuiz}>Play again</Button>
+                    <Button size="lg" variant="outline" data-cta="change_settings" data-cta-location="quiz_result" onClick={resetSession}>Change settings</Button>
                   </div>
                 )}
                 <TelegramJoin variant="compact" location="quiz_result" />
@@ -505,7 +511,7 @@ export default function PracticePage() {
                   <h2 className="text-2xl font-semibold">Flashcards for {selectedLetter}</h2>
                   <p className="text-muted-foreground">Click the card to flip. Arrow keys move, K means knew it, D means you didn’t.</p>
                 </div>
-                <Button size="lg" className="w-full" onClick={startFlash}>Start flashcards</Button>
+                <Button size="lg" className="w-full" data-cta="start_flashcards" data-cta-location="practice" onClick={startFlash}>Start flashcards</Button>
               </div>
             ) : (
               <div className="space-y-5">
@@ -535,7 +541,7 @@ export default function PracticePage() {
                 <h2 className="text-2xl font-semibold">Guess letter {selectedLetter}</h2>
                 <p className="text-muted-foreground">A term appears in English or Hindi. Type the other side and press Enter.</p>
               </div>
-              <Button size="lg" className="w-full" onClick={nextGuess}>Start guessing</Button>
+              <Button size="lg" className="w-full" data-cta="start_guessing" data-cta-location="practice" onClick={nextGuess}>Start guessing</Button>
             </div>
           ) : (
             <div className="space-y-5">
