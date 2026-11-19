@@ -66,7 +66,8 @@ export default function RootLayout({
     <html lang="en" className="dark">
       {validClarityId ? (
         <head>
-          <Script id="clarity" strategy="beforeInteractive">
+          {/* Not id="clarity": an element id becomes window.clarity and breaks the snippet. */}
+          <Script id="ms-clarity-init" strategy="beforeInteractive">
             {`(function(c,l,a,r,i,t,y){
               c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
               t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/${validClarityId}";
